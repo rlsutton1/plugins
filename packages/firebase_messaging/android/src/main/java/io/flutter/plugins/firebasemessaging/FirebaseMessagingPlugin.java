@@ -28,6 +28,8 @@ import io.flutter.plugin.common.PluginRegistry.Registrar;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import android.util.Log;
+
 
 /** FirebaseMessagingPlugin */
 public class FirebaseMessagingPlugin extends BroadcastReceiver
@@ -53,15 +55,20 @@ public class FirebaseMessagingPlugin extends BroadcastReceiver
 
     IntentFilter intentFilter = new IntentFilter();
     intentFilter.addAction(FlutterFirebaseMessagingService.ACTION_TOKEN);
-    intentFilter.addAction(FlutterFirebaseMessagingService.ACTION_REMOTE_MESSAGE);
+    intentFilter.addAction(FlutterFirebaseMessagingService.ACTION_FOREGROUND_REMOTE_MESSAGE);
+    intentFilter.addAction(FlutterFirebaseMessagingService.ACTION_BACKGROUND_REMOTE_MESSAGE);
     LocalBroadcastManager manager = LocalBroadcastManager.getInstance(registrar.context());
     manager.registerReceiver(this, intentFilter);
+    registrar.context().registerReceiver(this,intentFilter);
+
   }
 
   // BroadcastReceiver implementation.
   @Override
   public void onReceive(Context context, Intent intent) {
     String action = intent.getAction();
+
+    Log.w("TestFBM","In on Receive "+action);
 
     if (action == null) {
       return;
@@ -70,7 +77,7 @@ public class FirebaseMessagingPlugin extends BroadcastReceiver
     if (action.equals(FlutterFirebaseMessagingService.ACTION_TOKEN)) {
       String token = intent.getStringExtra(FlutterFirebaseMessagingService.EXTRA_TOKEN);
       channel.invokeMethod("onToken", token);
-    } else if (action.equals(FlutterFirebaseMessagingService.ACTION_REMOTE_MESSAGE)) {
+    } else if (action.equals(FlutterFirebaseMessagingService.ACTION_FOREGROUND_REMOTE_MESSAGE)) {
       RemoteMessage message =
           intent.getParcelableExtra(FlutterFirebaseMessagingService.EXTRA_REMOTE_MESSAGE);
       Map<String, Object> content = parseRemoteMessage(message);
@@ -215,6 +222,7 @@ public class FirebaseMessagingPlugin extends BroadcastReceiver
 
   @Override
   public boolean onNewIntent(Intent intent) {
+    Log.w("TestFMB","onNewIntent "+intent.getAction());
     boolean res = sendMessageFromIntent("onResume", intent);
     if (res && registrar.activity() != null) {
       registrar.activity().setIntent(intent);
@@ -224,6 +232,9 @@ public class FirebaseMessagingPlugin extends BroadcastReceiver
 
   /** @return true if intent contained a message to send. */
   private boolean sendMessageFromIntent(String method, Intent intent) {
+
+    Log.w("TestFMB","in Send Message From Intent "+intent.getAction());
+
     if (CLICK_ACTION_VALUE.equals(intent.getAction())
         || CLICK_ACTION_VALUE.equals(intent.getStringExtra("click_action"))) {
       Map<String, Object> message = new HashMap<>();
